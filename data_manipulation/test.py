@@ -1,7 +1,15 @@
 import pandas as pd
 import numpy as np
+import glob
 
 if __name__ == "__main__":
+
+
+
+    # for filename in glob.glob("data/PrecisLoc/Scenario_1/**/ground*"):
+    #     print(filename)
+
+
     # x0 = "11:05:07:87"
     # x = "11:06:37:24"
     # x1 = "11:6:37:24"
@@ -38,7 +46,8 @@ if __name__ == "__main__":
 
     # print(df)
 
-    data = {'a': [ 1, 2, 3], 'b': [4, 5, 6]}
+    data = {'a': [ 1, np.NaN, 3, np.NaN], 'b': [4, 5, 6, 7]}
     df = pd.DataFrame(data=data)
     df['x'] = df['a'] + df['b']
+    print(df.loc[:, 'a'].interpolate(inplace=True))
     print(df)

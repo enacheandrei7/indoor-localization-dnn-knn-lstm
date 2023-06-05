@@ -11,6 +11,8 @@ import pandas as pd
 import numpy as np
 
 pd.set_option('display.float_format', '{:.15f}'.format)
+# pd.set_option("display.max_columns", None)
+
 
 def calculate_ms_interval(times_list):
     """
@@ -51,7 +53,6 @@ def calculate_ms_interval(times_list):
         milisecond = f"{curr_miliseconds%3600000%60000%1000//10:02d}"
         full_timestamps_list.append(':'.join((hour, minute, second, milisecond)))
     return full_timestamps_list
-
 
 def xml_imu_sensors_converter(sensors_xml):
     """
@@ -120,7 +121,6 @@ def xml_imu_sensors_converter(sensors_xml):
     # df.to_csv("data/Processed/sensor_data.csv")
     return df
 
-
 def imu_sensor_and_position_generator(sensors_df, ground_truth_xml):
     """
     Reads the xml ground truth inputs and outputs a dataframe containing the sensor data and the ground truth
@@ -158,7 +158,6 @@ def imu_sensor_and_position_generator(sensors_df, ground_truth_xml):
     # sens_and_loc_df.to_csv('data/Processed/sensor_and_location.csv')
     return sens_and_loc_df
 
-
 def xml_wifi_converter(sensors_xml):
     """
     Wifi data parser, reads the xml inputs and creates a new DataFrame with the Wifi data.
@@ -167,7 +166,7 @@ def xml_wifi_converter(sensors_xml):
         sensors_xml (str): The path to the xml file containing sensor accelerometer, gyroscope, magnetometer and wifi data
 
     Returns:
-        wifi_df (DataFrame): DataFrame containing the wifi data from the raw xml input file
+        wifi_df (DataFrame): DataFrame containing the wifi data from the raw xml input file. It has all the timestamps between the first and last wifi reading, at 10ms intervals, even though many rows are empty as the wifi data was taken at about 1000 ms
     """
     tree = ET.parse(sensors_xml)
     root = tree.getroot()
@@ -204,7 +203,6 @@ def xml_wifi_converter(sensors_xml):
 
     return wifi_df
 
-
 def wifi_and_position_generator(wifi_df, ground_truth_xml):
     """
     Reads the xml ground truth inputs and outputs a dataframe containing the wifi data and the ground truth
@@ -212,6 +210,8 @@ def wifi_and_position_generator(wifi_df, ground_truth_xml):
     Parameters:
         wifi_df (DataFrame): DataFrame containing wifi data
         ground_truth_xml (str): The path to the xml file containing the ground truth location with latitude and longitude
+    Returns:
+        wifi_and_loc_df (DataFrame): DataFrame containing only the wifi values and their corresponding locations
     """
     tree = ET.parse(ground_truth_xml)
     root = tree.getroot()
@@ -240,9 +240,12 @@ def wifi_and_position_generator(wifi_df, ground_truth_xml):
     wifi_and_loc_df.loc[:, 'lat'].interpolate(inplace=True)
     wifi_and_loc_df.loc[:, 'long'].interpolate(inplace=True)
 
-    #TODO: Remove rows with no wifi data
-    print(wifi_and_loc_df)
+    wifi_and_loc_df.dropna(thresh=3, inplace=True)
 
+    return wifi_and_loc_df
+
+def wifi_and_sensors_combiner(sensor_df, wifi_df):
+    pass
 
 if __name__ == "__main__":
     # All data folders
@@ -263,13 +266,17 @@ if __name__ == "__main__":
 
     data_file_paths = zip(ground_truts_files_list, raw_sensor_data_files_list)
 
-    wifi_df = xml_wifi_converter(sensor_readings_xml_path)
-    wifi_and_position_generator(wifi_df, ground_truth_xml_path)
+    for idx, data in enumerate(data_file_paths):
+        # IMU sensors
+        df_sensor_readings = xml_imu_sensors_converter(sensor_readings_xml_path)
+        # df_sensor_readings.to_csv(f"{output_folder}sensor_data_{idx+1}.csv")
+        df_sensor_and_pos = imu_sensor_and_position_generator(df_sensor_readings, ground_truth_xml_path)
+        df_sensor_and_pos.to_csv(f"{output_folder}sensor_data_and_location_{idx+1}.csv")
 
-    # for idx, data in enumerate(data_file_paths):
-    #     df_sensor_readings = xml_imu_sensors_converter(sensor_readings_xml_path)
-    #     df_sensor_readings.to_csv(f"{output_folder}sensor_data_{idx+1}.csv")
-    #     df_sensor_and_pos = imu_sensor_and_position_generator(df_sensor_readings, ground_truth_xml_path)
-    #     df_sensor_and_pos.to_csv(f"{output_folder}sensor_data_and_location_{idx+1}.csv")
-    #     print(f'File {idx+1} converted')
+        # Wifi data
+        df_wifi = xml_wifi_converter(sensor_readings_xml_path)
+        df_wifi_and_pos = wifi_and_position_generator(df_wifi, ground_truth_xml_path)
+        df_wifi_and_pos.to_csv(f"{output_folder}wifi_data_and_location_{idx+1}.csv")
+
+        print(f'File {idx+1} converted')
 

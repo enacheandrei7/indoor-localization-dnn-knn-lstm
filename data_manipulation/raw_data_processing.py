@@ -290,7 +290,9 @@ if __name__ == "__main__":
 
     ground_truts_files_list = []
     raw_sensor_data_files_list = []
-    create_full_sensors_csv=True
+    create_full_sensors_csv=False
+    create_full_ground_truth_csv=False
+    create_partial_ground_truth_csv=True
     full_sensors_df = pd.DataFrame(columns=['ax',
                                             'ay',
                                             'az',
@@ -303,6 +305,8 @@ if __name__ == "__main__":
                                             'a_total',
                                             'g_total',
                                             'm_total'])
+    full_ground_truth_df = pd.DataFrame(columns=['lat', 'long'])
+    partial_ground_truth_df = pd.DataFrame(columns=['lat', 'long'])
 
     for filename in glob.glob(f"{sc_1_precisloc_data_folder}**/ground*"):
         ground_truts_files_list.append(filename)
@@ -317,26 +321,42 @@ if __name__ == "__main__":
         data[0] = ground truth
         data[1] = sensor readings
         """
-        # IMU sensors
-        df_sensor_readings = xml_imu_sensors_converter(data[1])
-        # df_sensor_readings.to_csv(f"{output_folder}sensor_data_{idx+1}.csv")
-        df_sensor_and_pos = imu_sensor_and_position_generator(df_sensor_readings, data[0])
-        # df_sensor_and_pos.to_csv(f"{output_folder}sensor_data_and_location_{idx+1}.csv")
-        full_sensors_df=pd.concat([full_sensors_df, df_sensor_and_pos], axis=0)
+        # # IMU sensors
+        # df_sensor_readings = xml_imu_sensors_converter(data[1])
+        # # df_sensor_readings.to_csv(f"{output_folder}sensor_data_{idx+1}.csv")
+        # df_sensor_and_pos = imu_sensor_and_position_generator(df_sensor_readings, data[0])
+        # # df_sensor_and_pos.to_csv(f"{output_folder}sensor_data_and_location_{idx+1}.csv")
+        # full_sensors_df=pd.concat([full_sensors_df, df_sensor_and_pos], axis=0)
 
         # # Wifi data
         # df_wifi = xml_wifi_converter(data[1])
         # df_wifi_and_pos = wifi_and_position_generator(df_wifi, data[0])
         # df_wifi_and_pos.to_csv(f"{output_folder}wifi_data_and_location_{idx+1}.csv")
 
-        # # Ground Truths
+        # # # Ground Truths
         # df_ground_truth = get_ground_truth(data[0])
-        # df_ground_truth.to_csv(f"{output_folder}ground_truth_{idx+1}.csv")
+        # # df_ground_truth.to_csv(f"{output_folder}ground_truth_{idx+1}.csv")
+        # full_ground_truth_df=pd.concat([full_ground_truth_df, df_ground_truth], axis=0)
 
         print(f'File {idx+1} converted')
+
+    for idx, data in enumerate(ground_truts_files_list[:3]):
+        """
+        Create file from multiple ground truths
+        """
+        df_ground_truth = get_ground_truth(data)
+        # df_ground_truth.to_csv(f"{output_folder}ground_truth_{idx+1}.csv")
+        partial_ground_truth_df=pd.concat([partial_ground_truth_df, df_ground_truth], axis=0)
 
     if create_full_sensors_csv:
         print(full_sensors_df)
         full_sensors_df.to_csv(f"{output_folder}full_sensor_data_and_location.csv")
         print('Csv file containing all the IMU sensors and location from the full scenario has been created.')
 
+    if create_full_ground_truth_csv:
+        full_ground_truth_df.to_csv(f"{output_folder}full_ground_truth.csv")
+        print('Csv file containing the first 4 ground truth files from the full scenario has been created.')
+
+    if create_partial_ground_truth_csv:
+        partial_ground_truth_df.to_csv(f"{output_folder}partial_4_ground_truth.csv")
+        print('Csv file containing all the ground truth from the full scenario has been created.')

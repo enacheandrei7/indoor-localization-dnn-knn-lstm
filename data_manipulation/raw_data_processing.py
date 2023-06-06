@@ -287,9 +287,10 @@ if __name__ == "__main__":
     # Data files for easier testing
     sensor_readings_xml_path = 'data/PrecisLoc/Scenario_1/1/Sensor_readings_11-05-07.xml'
     ground_truth_xml_path = 'data/PrecisLoc/Scenario_1/1/ground_truth_11-05-07.xml'
-    # sensor_readings_csv_path = 'sensor_data.csv'
+
     ground_truts_files_list = []
     raw_sensor_data_files_list = []
+    create_full_sensors_csv=True
     full_sensors_df = pd.DataFrame(columns=['ax',
                                             'ay',
                                             'az',
@@ -302,7 +303,6 @@ if __name__ == "__main__":
                                             'a_total',
                                             'g_total',
                                             'm_total'])
-    create_full_sensors_csv=True
 
     for filename in glob.glob(f"{sc_1_precisloc_data_folder}**/ground*"):
         ground_truts_files_list.append(filename)

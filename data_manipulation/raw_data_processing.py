@@ -247,6 +247,39 @@ def wifi_and_position_generator(wifi_df, ground_truth_xml):
 def wifi_and_sensors_combiner(sensor_df, wifi_df):
     pass
 
+def get_ground_truth(ground_truth_xml):
+    """
+    Reads the xml ground truth inputs and outputs a dataframe containing the ground truth
+
+    Parameters:
+        ground_truth_xml (str): The path to the xml file containing the ground truth location with latitude and longitude
+    Returns:
+        position_df (DataFrame): DataFrame containing only the locations
+    """
+    tree = ET.parse(ground_truth_xml)
+    root = tree.getroot()
+    timestamps = []
+
+        # If no elements in file,
+    if root.__len__() < 1:
+        print('Xml file has no sensor values')
+        exit(-1)
+
+    for element in root:
+        # the time format for ground_truth has 3 values at ms, not 2 like in the sensor data, so we keep only the first 11 chars (hh:mm:ss:msms)
+        timestamps.append(element.attrib['time'][:11])
+    times_list = list(dict.fromkeys(timestamps))
+
+    position_df = pd.DataFrame(np.nan, index=times_list, columns=['lat', 'long'])
+
+    for element in root:
+        attributes = element.attrib
+        position_df.at[attributes['time'][:11], 'lat'] = float(attributes['lat'])
+        position_df.at[attributes['time'][:11], 'long'] = float(attributes['long'])
+
+    return position_df
+
+
 if __name__ == "__main__":
     # All data folders
     sc_1_precisloc_data_folder = 'data/PrecisLoc/Scenario_1/'
@@ -257,6 +290,19 @@ if __name__ == "__main__":
     # sensor_readings_csv_path = 'sensor_data.csv'
     ground_truts_files_list = []
     raw_sensor_data_files_list = []
+    full_sensors_df = pd.DataFrame(columns=['ax',
+                                            'ay',
+                                            'az',
+                                            'gx',
+                                            'gy',
+                                            'gz',
+                                            'mx',
+                                            'my',
+                                            'mz',
+                                            'a_total',
+                                            'g_total',
+                                            'm_total'])
+    create_full_sensors_csv=True
 
     for filename in glob.glob(f"{sc_1_precisloc_data_folder}**/ground*"):
         ground_truts_files_list.append(filename)
@@ -267,16 +313,30 @@ if __name__ == "__main__":
     data_file_paths = zip(ground_truts_files_list, raw_sensor_data_files_list)
 
     for idx, data in enumerate(data_file_paths):
+        """
+        data[0] = ground truth
+        data[1] = sensor readings
+        """
         # IMU sensors
-        df_sensor_readings = xml_imu_sensors_converter(sensor_readings_xml_path)
+        df_sensor_readings = xml_imu_sensors_converter(data[1])
         # df_sensor_readings.to_csv(f"{output_folder}sensor_data_{idx+1}.csv")
-        df_sensor_and_pos = imu_sensor_and_position_generator(df_sensor_readings, ground_truth_xml_path)
-        df_sensor_and_pos.to_csv(f"{output_folder}sensor_data_and_location_{idx+1}.csv")
+        df_sensor_and_pos = imu_sensor_and_position_generator(df_sensor_readings, data[0])
+        # df_sensor_and_pos.to_csv(f"{output_folder}sensor_data_and_location_{idx+1}.csv")
+        full_sensors_df=pd.concat([full_sensors_df, df_sensor_and_pos], axis=0)
 
-        # Wifi data
-        df_wifi = xml_wifi_converter(sensor_readings_xml_path)
-        df_wifi_and_pos = wifi_and_position_generator(df_wifi, ground_truth_xml_path)
-        df_wifi_and_pos.to_csv(f"{output_folder}wifi_data_and_location_{idx+1}.csv")
+        # # Wifi data
+        # df_wifi = xml_wifi_converter(data[1])
+        # df_wifi_and_pos = wifi_and_position_generator(df_wifi, data[0])
+        # df_wifi_and_pos.to_csv(f"{output_folder}wifi_data_and_location_{idx+1}.csv")
+
+        # # Ground Truths
+        # df_ground_truth = get_ground_truth(data[0])
+        # df_ground_truth.to_csv(f"{output_folder}ground_truth_{idx+1}.csv")
 
         print(f'File {idx+1} converted')
+
+    if create_full_sensors_csv:
+        print(full_sensors_df)
+        full_sensors_df.to_csv(f"{output_folder}full_sensor_data_and_location.csv")
+        print('Csv file containing all the IMU sensors and location from the full scenario has been created.')
 

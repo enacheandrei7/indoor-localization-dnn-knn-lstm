@@ -9,6 +9,7 @@ import os
 import glob
 import pandas as pd
 import numpy as np
+import utm
 
 pd.set_option('display.float_format', '{:.15f}'.format)
 # pd.set_option("display.max_columns", None)
@@ -290,9 +291,11 @@ if __name__ == "__main__":
 
     ground_truts_files_list = []
     raw_sensor_data_files_list = []
-    create_full_sensors_csv=False
+    wifi_and_location_files_list = []
+    create_full_sensors_csv=True
     create_full_ground_truth_csv=False
-    create_partial_ground_truth_csv=True
+    create_partial_ground_truth_csv=False
+    create_full_wifi_and_location=False
     full_sensors_df = pd.DataFrame(columns=['ax',
                                             'ay',
                                             'az',
@@ -307,6 +310,7 @@ if __name__ == "__main__":
                                             'm_total'])
     full_ground_truth_df = pd.DataFrame(columns=['lat', 'long'])
     partial_ground_truth_df = pd.DataFrame(columns=['lat', 'long'])
+    full_wifi_and_location = pd.DataFrame()
 
     for filename in glob.glob(f"{sc_1_precisloc_data_folder}**/ground*"):
         ground_truts_files_list.append(filename)
@@ -314,7 +318,10 @@ if __name__ == "__main__":
     for filename in glob.glob(f"{sc_1_precisloc_data_folder}**/Sensor*"):
         raw_sensor_data_files_list.append(filename)
 
-    data_file_paths = zip(ground_truts_files_list, raw_sensor_data_files_list)
+    for filename in glob.glob(f"{output_folder}/wifi_data*"):
+        wifi_and_location_files_list.append(filename)
+
+    data_file_paths = zip(ground_truts_files_list[1:], raw_sensor_data_files_list[1:])
 
     for idx, data in enumerate(data_file_paths):
         """
@@ -322,11 +329,11 @@ if __name__ == "__main__":
         data[1] = sensor readings
         """
         # # IMU sensors
-        # df_sensor_readings = xml_imu_sensors_converter(data[1])
-        # # df_sensor_readings.to_csv(f"{output_folder}sensor_data_{idx+1}.csv")
-        # df_sensor_and_pos = imu_sensor_and_position_generator(df_sensor_readings, data[0])
-        # # df_sensor_and_pos.to_csv(f"{output_folder}sensor_data_and_location_{idx+1}.csv")
-        # full_sensors_df=pd.concat([full_sensors_df, df_sensor_and_pos], axis=0)
+        df_sensor_readings = xml_imu_sensors_converter(data[1])
+        # df_sensor_readings.to_csv(f"{output_folder}sensor_data_{idx+1}.csv")
+        df_sensor_and_pos = imu_sensor_and_position_generator(df_sensor_readings, data[0])
+        # df_sensor_and_pos.to_csv(f"{output_folder}sensor_data_and_location_{idx+1}.csv")
+        full_sensors_df=pd.concat([full_sensors_df, df_sensor_and_pos], axis=0)
 
         # # Wifi data
         # df_wifi = xml_wifi_converter(data[1])
@@ -340,13 +347,6 @@ if __name__ == "__main__":
 
         print(f'File {idx+1} converted')
 
-    for idx, data in enumerate(ground_truts_files_list[:3]):
-        """
-        Create file from multiple ground truths
-        """
-        df_ground_truth = get_ground_truth(data)
-        # df_ground_truth.to_csv(f"{output_folder}ground_truth_{idx+1}.csv")
-        partial_ground_truth_df=pd.concat([partial_ground_truth_df, df_ground_truth], axis=0)
 
     if create_full_sensors_csv:
         print(full_sensors_df)
@@ -358,5 +358,21 @@ if __name__ == "__main__":
         print('Csv file containing the first 4 ground truth files from the full scenario has been created.')
 
     if create_partial_ground_truth_csv:
+        num_of_files = 3
+        # Create ground truth for only 3 files
+        for idx, data in enumerate(ground_truts_files_list[:num_of_files]):
+            """
+            Create file from multiple ground truths
+            """
+            df_ground_truth = get_ground_truth(data)
+            partial_ground_truth_df=pd.concat([partial_ground_truth_df, df_ground_truth], axis=0)
         partial_ground_truth_df.to_csv(f"{output_folder}partial_4_ground_truth.csv")
         print('Csv file containing all the ground truth from the full scenario has been created.')
+
+    if create_full_wifi_and_location:
+        for wifi_and_location_file in wifi_and_location_files_list[1:]:
+            # print(wifi_and_location_file)
+            temp_df = pd.read_csv(wifi_and_location_file, index_col=0)
+            full_wifi_and_location = pd.concat([full_wifi_and_location, temp_df], axis=0)
+        full_wifi_and_location.to_csv(f"{output_folder}full_wifi_data_and_location_without_1.csv")
+        print('Csv file containing all the wifi data and ground truth from the full scenario has been created.')

@@ -490,26 +490,41 @@ if __name__ == "__main__":
         # df_ground_truth = get_ground_truth(data[0])
         # # df_ground_truth.to_csv(f"{output_folder}ground_truth_{idx+1}.csv")
         # full_ground_truth_df=pd.concat([full_ground_truth_df, df_ground_truth], axis=0)
-
         print(f'File {idx+1} converted')
 
+
     if create_full_sensors_csv:
+        """
+        Here we create a CSV with the full sensor and position data, interpolated
+        """
         print(full_sensors_df)
         full_sensors_df.to_csv(
             f"{output_folder}full_sensor_data_and_location.csv")
         print('Csv file containing all the IMU sensors and location from the full scenario has been created.')
 
+
     if create_full_sensors_no_interpol_csv:
+        """
+        Here we create a CSV with the full sensor and position data, with no interpolation
+        """
         print(full_sensors_df_no_sens_interpol)
         full_sensors_df_no_sens_interpol.to_csv(
             f"{output_folder}full_sensor_data_no_interpol_and_location.csv")
         print('Csv file containing all the IMU sensors and location (but sensors are not interpolated) from the full scenario has been created.')
 
+
     if create_full_ground_truth_csv:
+        """
+        Here we create a CSV with the full position data with interpolation
+        """
         full_ground_truth_df.to_csv(f"{output_folder}full_ground_truth.csv")
         print('Csv file containing the first 4 ground truth files from the full scenario has been created.')
 
+
     if create_partial_ground_truth_csv:
+        """
+        Here we create a CSV with the ground truth for the number of files specified (max 7 as it is now because we start with the second file, the first has outliers which decalate data)
+        """
         num_of_files = 3
         # Create ground truth for only 3 files
         for idx, data in enumerate(ground_truts_files_list[:num_of_files]):
@@ -523,7 +538,11 @@ if __name__ == "__main__":
             f"{output_folder}partial_4_ground_truth.csv")
         print('Csv file containing all the ground truth from the full scenario has been created.')
 
+
     if create_full_wifi_and_location:
+        """
+        Here we create a CSV with the full wifi and position data, with position interpolated before being correlated with the wifi
+        """
         for wifi_and_location_file in wifi_and_location_files_list[1:]:
             # print(wifi_and_location_file)
             temp_df = pd.read_csv(wifi_and_location_file, index_col=0)

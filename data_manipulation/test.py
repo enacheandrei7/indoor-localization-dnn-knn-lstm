@@ -49,5 +49,5 @@ if __name__ == "__main__":
     data = {'a': [ 1, np.NaN, 3, np.NaN], 'b': [4, 5, 6, 7]}
     df = pd.DataFrame(data=data)
     df['x'] = df['a'] + df['b']
-    print(df.loc[:, 'a'].interpolate(inplace=True))
+    df.loc[:, 'a'].interpolate(inplace=True)
     print(df)
